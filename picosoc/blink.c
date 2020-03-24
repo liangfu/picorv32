@@ -19,10 +19,12 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #ifdef ICEBREAKER
 #  define MEM_TOTAL 0x20000 /* 128 KB */
 #elif HX8KDEMO
+// #  define MEM_TOTAL 0x200 /* 2 KB */
 #  define MEM_TOTAL 0x200 /* 2 KB */
 #else
 #  error "Set -DICEBREAKER or -DHX8KDEMO when compiling firmware.c"
@@ -661,21 +663,50 @@ void cmd_echo()
 		putchar(c);
 }
 
+void cmd_blink()
+{
+	print("Return to menu by sending '!'\n\n");
+	char c;
+	uint32_t cycles_now;
+	while (1) {
+    __asm__ volatile ("rdcycle %0" : "=r"(cycles_now));
+    if ((cycles_now % 50000000) < 25000000) {
+      reg_leds = 0;
+    } else {
+      reg_leds = 1;
+    }
+		c = reg_uart_data;
+    if (c == '\r')
+      break;
+  }
+}
+
 // --------------------------------------------------------
 
 void main()
 {
 	reg_leds = 31;
 	// reg_uart_clkdiv = 104;
-    reg_uart_clkdiv = 434;
+  reg_uart_clkdiv = 434;
 	print("Booting..\n");
 
-	reg_leds = 63; /*
+	// uint32_t cycles_now;
+  // while (1) {
+  //   __asm__ volatile ("rdcycle %0" : "=r"(cycles_now));
+  //   if ((cycles_now % 50000000) < 25000000) {
+  //     reg_leds = 0;
+  //   } else {
+  //     reg_leds = 1;
+  //   }
+  // }
+  
+	reg_leds = 63;
 	set_flash_qspi_flag();
 
 	reg_leds = 127;
-	while (getchar_prompt("Press ENTER to continue..\n") != '\r') { // wait
-    }
+	while (getchar_prompt("Press ENTER to continue..\n") != '\r') {
+    // wait
+  }
 
 	print("\n");
 	print("  ____  _          ____         ____\n");
@@ -714,6 +745,7 @@ void main()
 		print("   [M] Run Memtest\n");
 		print("   [S] Print SPI state\n");
 		print("   [e] Echo UART\n");
+		print("   [b] Blink LED0\n");
 		print("\n");
 
 		for (int rep = 10; rep > 0; rep--)
@@ -762,11 +794,14 @@ void main()
 			case 'e':
 				cmd_echo();
 				break;
+			case 'b':
+				cmd_blink();
+				break;
 			default:
 				continue;
 			}
 
 			break;
 		}
-	} */
+	}
 }

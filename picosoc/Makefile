@@ -1,4 +1,18 @@
 
+first: de10lite_fw.mif de10lite_fw.elf
+
+de10lite_fw.elf: hx8kdemo_sections.lds start.s blink.c
+	riscv64-unknown-elf-gcc -DHX8KDEMO -march=rv32i -mabi=ilp32 -Wl,-Bstatic,-T,hx8kdemo_sections.lds,--strip-debug -ffreestanding -nostdlib -o de10lite_fw.elf start.s blink.c divsi3.c
+
+de10lite_fw.bin: de10lite_fw.elf
+	riscv64-unknown-elf-objcopy -O binary de10lite_fw.elf de10lite_fw.bin
+
+de10lite_fw.hex: de10lite_fw.bin
+	od -t x4 -An -v -w4 de10lite_fw.bin > de10lite_fw.hex
+
+de10lite_fw.mif: de10lite_fw.hex
+	python3 hex2mif.py de10lite_fw.hex
+
 # ---- iCE40 HX8K Breakout Board ----
 
 hx8ksim: hx8kdemo_tb.vvp hx8kdemo_fw.hex
@@ -34,16 +48,16 @@ hx8kprog_fw: hx8kdemo_fw.bin
 	iceprog -o 1M hx8kdemo_fw.bin
 
 hx8kdemo_sections.lds: sections.lds
-	riscv32-unknown-elf-cpp -P -DHX8KDEMO -o $@ $^
+	riscv64-unknown-elf-cpp -P -DHX8KDEMO -o $@ $^
 
 hx8kdemo_fw.elf: hx8kdemo_sections.lds start.s firmware.c
-	riscv32-unknown-elf-gcc -DHX8KDEMO -march=rv32imc -Wl,-Bstatic,-T,hx8kdemo_sections.lds,--strip-debug -ffreestanding -nostdlib -o hx8kdemo_fw.elf start.s firmware.c
+	$(CC) -DHX8KDEMO -march=rv32i -mabi=ilp32 -Wl,-Bstatic,-T,hx8kdemo_sections.lds,--strip-debug -ffreestanding -nostdlib -o hx8kdemo_fw.elf start.s firmware.c
 
 hx8kdemo_fw.hex: hx8kdemo_fw.elf
-	riscv32-unknown-elf-objcopy -O verilog hx8kdemo_fw.elf hx8kdemo_fw.hex
+	riscv64-unknown-elf-objcopy -O verilog hx8kdemo_fw.elf hx8kdemo_fw.hex
 
 hx8kdemo_fw.bin: hx8kdemo_fw.elf
-	riscv32-unknown-elf-objcopy -O binary hx8kdemo_fw.elf hx8kdemo_fw.bin
+	riscv64-unknown-elf-objcopy -O binary hx8kdemo_fw.elf hx8kdemo_fw.bin
 
 # ---- iCE40 IceBreaker Board ----
 
@@ -80,16 +94,16 @@ icebprog_fw: icebreaker_fw.bin
 	iceprog -o 1M icebreaker_fw.bin
 
 icebreaker_sections.lds: sections.lds
-	riscv32-unknown-elf-cpp -P -DICEBREAKER -o $@ $^
+	riscv64-unknown-elf-cpp -P -DICEBREAKER -o $@ $^
 
 icebreaker_fw.elf: icebreaker_sections.lds start.s firmware.c
-	riscv32-unknown-elf-gcc -DICEBREAKER -march=rv32ic -Wl,-Bstatic,-T,icebreaker_sections.lds,--strip-debug -ffreestanding -nostdlib -o icebreaker_fw.elf start.s firmware.c
+	$(CC) -DICEBREAKER -march=rv32ic -Wl,-Bstatic,-T,icebreaker_sections.lds,--strip-debug -ffreestanding -nostdlib -o icebreaker_fw.elf start.s firmware.c
 
 icebreaker_fw.hex: icebreaker_fw.elf
-	riscv32-unknown-elf-objcopy -O verilog icebreaker_fw.elf icebreaker_fw.hex
+	riscv64-unknown-elf-objcopy -O verilog icebreaker_fw.elf icebreaker_fw.hex
 
 icebreaker_fw.bin: icebreaker_fw.elf
-	riscv32-unknown-elf-objcopy -O binary icebreaker_fw.elf icebreaker_fw.bin
+	riscv64-unknown-elf-objcopy -O binary icebreaker_fw.elf icebreaker_fw.bin
 
 # ---- Testbench for SPI Flash Model ----
 
